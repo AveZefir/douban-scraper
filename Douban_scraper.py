@@ -14,7 +14,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 def driver_starter():
     options = uc.ChromeOptions()
     options.add_argument('--disable-popup-blocking')
-    driver = uc.Chrome(options=options)
+    driver = uc.Chrome(options=options, version_main=152)
     return driver
 
 def get_film_urls(driver):
@@ -125,8 +125,11 @@ except:
 
 url_list = get_film_urls(driver)
 
-with open('scrapped_films', 'r', encoding='utf-8') as f:
-    scrapped_films = json.load(f)
+try:
+    with open('scrapped_films', 'r', encoding='utf-8') as f:
+      scrapped_films = json.load(f)
+except:
+    scrapped_films = []
 final_data, scrapped_films = film_reviews_parser(url_list,driver, scrapped_films)
 
 for id, review in enumerate(final_data):
