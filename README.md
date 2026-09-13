@@ -32,6 +32,4 @@ A scraper for collecting reviews of Chinese movies from the Douban (豆瓣) webs
 pip install -r requirements.txt
 python Douban_scraper.py
 \`\`\`cd douban-scrapper
-git add .
-git commit -m "finalize README with results screenshot"
-git push
+
