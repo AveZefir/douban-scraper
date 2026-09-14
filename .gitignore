@@ -1,5 +1,5 @@
 douban_cookies.json
-scrapped_films.json
+scrapped_films
 Douban.csv
 Douban schrapper.ipynb
 __pycache__/
