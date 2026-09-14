@@ -5,11 +5,14 @@ import re
 import time
 import random
 import os
+from selenium.common.exceptions import TimeoutException
 import undetected_chromedriver as uc 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.action_chains import ActionChains
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def driver_starter():
     options = uc.ChromeOptions()
@@ -22,12 +25,12 @@ def get_film_urls(driver):
     time.sleep(random.uniform(1, 5))
     films_for_scrap = driver.find_element(By.XPATH, '//div[@data-swiper-slide-index = 0]').find_elements(By.CLASS_NAME, 'subject-card')
     time.sleep(random.uniform(1, 5))
-    films_for_scrap.extend(driver.find_element(By.XPATH, '//div[@data-swiper-slide-index = 1]').find_elements(By.CLASS_NAME, 'subject-card'))
-    time.sleep(random.uniform(1, 5))
-    films_for_scrap.extend(driver.find_element(By.XPATH, '//div[@data-swiper-slide-index = 2]').find_elements(By.CLASS_NAME, 'subject-card'))
-    time.sleep(random.uniform(1, 5))
-    films_for_scrap.extend(driver.find_element(By.XPATH, '//div[@data-swiper-slide-index = 3]').find_elements(By.CLASS_NAME, 'subject-card'))
-    time.sleep(random.uniform(1, 5))
+    # films_for_scrap.extend(driver.find_element(By.XPATH, '//div[@data-swiper-slide-index = 1]').find_elements(By.CLASS_NAME, 'subject-card'))
+    # time.sleep(random.uniform(1, 5))
+    # films_for_scrap.extend(driver.find_element(By.XPATH, '//div[@data-swiper-slide-index = 2]').find_elements(By.CLASS_NAME, 'subject-card'))
+    # time.sleep(random.uniform(1, 5))
+    # films_for_scrap.extend(driver.find_element(By.XPATH, '//div[@data-swiper-slide-index = 3]').find_elements(By.CLASS_NAME, 'subject-card'))
+    # time.sleep(random.uniform(1, 5))
     url_list = []
 
     for film in films_for_scrap:
@@ -37,9 +40,11 @@ def get_film_urls(driver):
 
 def save_results(final_data, scrapped_films):
     df = pd.DataFrame(final_data)
-    file_exists = os.path.isfile('Douban.csv')
-    df.to_csv('Douban.csv', mode='a', header=not file_exists, index=False, encoding='utf-8-sig')
-    with open('scrapped_films', 'w', encoding='utf-8') as f:
+    csv_path = os.path.join(BASE_DIR, 'Douban.csv')
+    scrapped_path = os.path.join(BASE_DIR, 'scrapped_films')
+    file_exists = os.path.isfile(csv_path)
+    df.to_csv(csv_path, mode='a', header=not file_exists, index=False, encoding='utf-8-sig')
+    with open(scrapped_path, 'w', encoding='utf-8') as f:
         json.dump(scrapped_films, f)
 
 def film_reviews_parser(url_list,driver,scrapped_films):
@@ -47,13 +52,17 @@ def film_reviews_parser(url_list,driver,scrapped_films):
     for id,url in enumerate(url_list):
         if not url in scrapped_films: 
             driver.get(url_list[id])
-            WebDriverWait(driver, 60).until(ec.presence_of_element_located((By.XPATH, "//p[@class = 'pl']//a[@href = 'reviews']")))
+            try:
+                WebDriverWait(driver, 60).until(ec.presence_of_element_located((By.XPATH, "//p[@class = 'pl']//a[@href = 'reviews']")))
+            except TimeoutException:
+                scrapped_films.append(url)
+                continue
             time.sleep(3)
             reviews_bttn = driver.find_element(By.ID, "reviews-wrapper").find_element(By.XPATH, ".//a[@href = 'reviews']")
             time.sleep(3)
             ActionChains(driver).move_to_element(reviews_bttn).perform()
             driver.execute_script("arguments[0].click();", reviews_bttn)
-            for i in range(0,20):
+            for i in range(0,10):
                 WebDriverWait(driver, 60).until(ec.presence_of_element_located((By.XPATH, '//div[@data-cid]')))
                 final_data.extend(review_parser(driver))
                 try:
@@ -126,7 +135,7 @@ except:
 url_list = get_film_urls(driver)
 
 try:
-    with open('scrapped_films', 'r', encoding='utf-8') as f:
+    with open(os.path.join(BASE_DIR, 'scrapped_films'), 'r', encoding='utf-8') as f:
       scrapped_films = json.load(f)
 except:
     scrapped_films = []
