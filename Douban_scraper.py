@@ -63,7 +63,10 @@ def film_reviews_parser(url_list,driver,scrapped_films):
             ActionChains(driver).move_to_element(reviews_bttn).perform()
             driver.execute_script("arguments[0].click();", reviews_bttn)
             for i in range(0,20):
-                WebDriverWait(driver, 60).until(ec.presence_of_element_located((By.XPATH, '//div[@data-cid]')))
+                try:
+                    WebDriverWait(driver, 60).until(ec.presence_of_element_located((By.XPATH, '//div[@data-cid]')))
+                except TimeoutException:
+                    continue
                 final_data.extend(review_parser(driver))
                 try:
                     next_page = driver.find_element(By.CLASS_NAME, 'paginator').find_element(By.CLASS_NAME, 'next').find_element(By.XPATH, './/a[@href]')
