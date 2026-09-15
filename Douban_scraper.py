@@ -25,12 +25,12 @@ def get_film_urls(driver):
     time.sleep(random.uniform(1, 5))
     films_for_scrap = driver.find_element(By.XPATH, '//div[@data-swiper-slide-index = 0]').find_elements(By.CLASS_NAME, 'subject-card')
     time.sleep(random.uniform(1, 5))
-    # films_for_scrap.extend(driver.find_element(By.XPATH, '//div[@data-swiper-slide-index = 1]').find_elements(By.CLASS_NAME, 'subject-card'))
-    # time.sleep(random.uniform(1, 5))
-    # films_for_scrap.extend(driver.find_element(By.XPATH, '//div[@data-swiper-slide-index = 2]').find_elements(By.CLASS_NAME, 'subject-card'))
-    # time.sleep(random.uniform(1, 5))
-    # films_for_scrap.extend(driver.find_element(By.XPATH, '//div[@data-swiper-slide-index = 3]').find_elements(By.CLASS_NAME, 'subject-card'))
-    # time.sleep(random.uniform(1, 5))
+    films_for_scrap.extend(driver.find_element(By.XPATH, '//div[@data-swiper-slide-index = 1]').find_elements(By.CLASS_NAME, 'subject-card'))
+    time.sleep(random.uniform(1, 5))
+    films_for_scrap.extend(driver.find_element(By.XPATH, '//div[@data-swiper-slide-index = 2]').find_elements(By.CLASS_NAME, 'subject-card'))
+    time.sleep(random.uniform(1, 5))
+    films_for_scrap.extend(driver.find_element(By.XPATH, '//div[@data-swiper-slide-index = 3]').find_elements(By.CLASS_NAME, 'subject-card'))
+    time.sleep(random.uniform(1, 5))
     url_list = []
 
     for film in films_for_scrap:
@@ -48,8 +48,8 @@ def save_results(final_data, scrapped_films):
         json.dump(scrapped_films, f)
 
 def film_reviews_parser(url_list,driver,scrapped_films):
-    final_data = []
     for id,url in enumerate(url_list):
+        final_data = []
         if not url in scrapped_films: 
             driver.get(url_list[id])
             try:
@@ -62,7 +62,7 @@ def film_reviews_parser(url_list,driver,scrapped_films):
             time.sleep(3)
             ActionChains(driver).move_to_element(reviews_bttn).perform()
             driver.execute_script("arguments[0].click();", reviews_bttn)
-            for i in range(0,10):
+            for i in range(0,20):
                 WebDriverWait(driver, 60).until(ec.presence_of_element_located((By.XPATH, '//div[@data-cid]')))
                 final_data.extend(review_parser(driver))
                 try:
@@ -73,6 +73,12 @@ def film_reviews_parser(url_list,driver,scrapped_films):
             scrapped_films.append(url)
         else:
             continue
+        for idn, review in enumerate(final_data):
+            interim_review = [re.sub(r'\s+', ' ', re.sub(r'[a-zA-Z\n]+', '', n)).strip() for n in review['review']]
+            interim_review = " ".join(interim_review)
+            final_data[idn]['review'] = interim_review
+        final_data = [i for i in final_data if len(i['review']) > 10]
+        save_results(final_data, scrapped_films)
     return final_data, scrapped_films
 
 def getting_cookies(driver):
@@ -140,13 +146,5 @@ try:
 except:
     scrapped_films = []
 final_data, scrapped_films = film_reviews_parser(url_list,driver, scrapped_films)
-
-for id, review in enumerate(final_data):
-    interim_review = [re.sub(r'\s+', ' ', re.sub(r'[a-zA-Z\n]+', '', n)).strip() for n in review['review']]
-    interim_review = " ".join(interim_review)
-    final_data[id]['review'] = interim_review
-final_data = [i for i in final_data if len(i['review']) > 10]
-
-save_results(final_data, scrapped_films)
 
 driver.quit()
